@@ -64,7 +64,7 @@ function storeData(data, i) {
     let symbol = data.SYMBOL
     let date = data.DATE1
 
-    stockDbData.doc(symbol).set({ [date]: data })
+    stockDbData.doc(symbol).update({ [date]: data })
         .then(() => {
             console.log(`${i} : "${symbol}" dated "${date}" is Saved`)
         })
