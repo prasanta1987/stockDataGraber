@@ -6,4 +6,3 @@ node_modules
 //All Ignored Files
 
 fbConfig.js
-*.csv
