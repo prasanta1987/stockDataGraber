@@ -26,8 +26,9 @@ function getData() {
                 .fromString(res.data)
                 .then((stockData) => {
                     let headerRow = stockData.shift()
-                    let jsonData = []
-
+                    let jsonArrayData = []
+                    let jsonData = {}
+                    let i = 1
                     stockData.map(x => {
                         let data = {
                             [headerRow[0]]: x[0],
@@ -47,15 +48,9 @@ function getData() {
                             [headerRow[14]]: x[14],
                         }
 
-                        jsonData.push(data)
+                        storeData(data, i)
+                        i++;
                     })
-
-                    let date = jsonData[0].DATE1
-
-                    stockDbData.doc(date).set({ "data": jsonData })
-                        .then(() => console.log('Data Stored Successfully'))
-                        .catch(error => console.log('Something Went Wrong'))
-
                 })
         })
         .catch(err => {
@@ -63,4 +58,22 @@ function getData() {
         })
 }
 
+
+function storeData(data, i) {
+
+    let symbol = data.SYMBOL
+    let date = data.DATE1
+
+    stockDbData.doc(symbol).set({ [date]: data })
+        .then(() => {
+            console.log(`${i} : "${symbol}" dated "${date}" is Saved`)
+        })
+        .catch(error => console.log(`${i} : ${symbol} dated ${date} Failed to Save`))
+}
+
+let day = 1, hour = 0, minute = 0, second = 0
+
+const interval = (day * 24 * 60 * 60) + (hour * 60 * 60) + (minute * 60) + second
+
 getData()
+// setTimeout(getData, interval)
