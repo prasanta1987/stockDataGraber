@@ -2,6 +2,7 @@ const axios = require('axios')
 const csv = require('csvtojson')
 const firebase = require('firebase')
 const fs = require('fs')
+const csvtojson = require('csvtojson')
 
 const fbConfig = require('./fbConfig').firebaseConfig
 
@@ -19,13 +20,14 @@ const getData = () => {
 }
 
 
-const convertFromFile = (csvFilePath) => {
+const convertFromFile = (fileName = 'sec_bhavdata_full.csv') => {
 
     csv({ noheader: true, output: "csv" })
-        .fromFile(`./offlineCsv/${csvFilePath}`)
+        .fromFile(`./offlineCsv/${fileName}`)
         .then(jsonObj => {
             makeJsonObject(jsonObj)
         })
+        .catch(() => console.log('File Name Incorrect.'))
 }
 
 const convertDatas = (data) => {
@@ -91,5 +93,15 @@ const storeToFile = (jsonArrayData) => {
 
 }
 
-// getData()
-convertFromFile('03042020.csv')
+
+let userAction = process.argv[2].toLowerCase()
+
+if (userAction == 'online') {
+    getData()
+} else if (userAction == 'offline') {
+    if (process.argv.length >= 3) {
+        convertFromFile(process.argv[3])
+    } else {
+        convertFromFile()
+    }
+}
