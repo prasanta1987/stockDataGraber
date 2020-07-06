@@ -1,20 +1,13 @@
 const axios = require('axios')
 const csv = require('csvtojson')
 const firebase = require('firebase')
+const fs = require('fs')
+
+const fbConfig = require('./fbConfig').firebaseConfig
 
 const url = 'https://www1.nseindia.com/products/content/sec_bhavdata_full.csv'
 
-const firebaseConfig = {
-    apiKey: "AIzaSyBp9j1irJlYlTzu0NhrJe4ngyxDXi4HCH4",
-    authDomain: "pran-home.firebaseapp.com",
-    databaseURL: "https://pran-home.firebaseio.com",
-    projectId: "pran-home",
-    storageBucket: "pran-home.appspot.com",
-    messagingSenderId: "802658990350",
-    appId: "1:802658990350:web:248bfdad28bc7a7c657f5f"
-};
-
-firebase.initializeApp(firebaseConfig)
+firebase.initializeApp(fbConfig)
 const db = firebase.firestore()
 const stockDbData = db.collection('stockData')
 
@@ -27,7 +20,6 @@ function getData() {
                 .then((stockData) => {
                     let headerRow = stockData.shift()
                     let jsonArrayData = []
-                    let jsonData = {}
                     let i = 1
                     stockData.map(x => {
                         let data = {
@@ -50,7 +42,11 @@ function getData() {
 
                         storeData(data, i)
                         i++;
+                        jsonArrayData.push(data)
                     })
+
+                    let fileDate = jsonArrayData[0].DATE1
+                    fs.writeFileSync(`./offlineData/stock_data_${fileDate}.json`, JSON.stringify(jsonArrayData))
                 })
         })
         .catch(err => {
