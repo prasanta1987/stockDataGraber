@@ -76,4 +76,4 @@ let day = 1, hour = 0, minute = 0, second = 0
 const interval = (day * 24 * 60 * 60) + (hour * 60 * 60) + (minute * 60) + second
 
 getData()
-// setTimeout(getData, interval)
+setTimeout(getData, interval)
