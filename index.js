@@ -64,16 +64,15 @@ function storeData(data, i) {
     let symbol = data.SYMBOL
     let date = data.DATE1
 
-    stockDbData.doc(symbol).update({ [date]: data })
+    stockDbData.doc(symbol).set({ [date]: data }, { merge: true })
         .then(() => {
             console.log(`${i} : "${symbol}" dated "${date}" is Saved`)
         })
         .catch(error => console.log(`${i} : ${symbol} dated ${date} Failed to Save`))
 }
 
-let day = 1, hour = 0, minute = 0, second = 0
+let day = 1, hour = 0, minute = 0, second = 0;
 
 const interval = (day * 24 * 60 * 60) + (hour * 60 * 60) + (minute * 60) + second
 
 getData()
-setTimeout(getData, interval)
