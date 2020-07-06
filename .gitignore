@@ -1,10 +1,9 @@
 // All Ignored Folders
 
 node_modules
-offlineData
-
 
 
 //All Ignored Files
 
 fbConfig.js
+*.csv

@@ -12,50 +12,67 @@ const db = firebase.firestore()
 const stockDbData = db.collection('stockData')
 
 
-function getData() {
+const getData = () => {
     axios.get(url)
-        .then(res => {
-            csv({ noheader: true, output: "csv" })
-                .fromString(res.data)
-                .then((stockData) => {
-                    let headerRow = stockData.shift()
-                    let jsonArrayData = []
-                    let i = 1
-                    stockData.map(x => {
-                        let data = {
-                            [headerRow[0]]: x[0],
-                            [headerRow[1]]: x[1],
-                            [headerRow[2]]: x[2],
-                            [headerRow[3]]: x[3],
-                            [headerRow[4]]: x[4],
-                            [headerRow[5]]: x[5],
-                            [headerRow[6]]: x[6],
-                            [headerRow[7]]: x[7],
-                            [headerRow[8]]: x[8],
-                            [headerRow[9]]: x[9],
-                            [headerRow[10]]: x[10],
-                            [headerRow[11]]: x[11],
-                            [headerRow[12]]: x[12],
-                            [headerRow[13]]: x[13],
-                            [headerRow[14]]: x[14],
-                        }
-
-                        storeData(data, i)
-                        i++;
-                        jsonArrayData.push(data)
-                    })
-
-                    let fileDate = jsonArrayData[0].DATE1
-                    fs.writeFileSync(`./offlineData/stock_data_${fileDate}.json`, JSON.stringify(jsonArrayData))
-                })
-        })
-        .catch(err => {
-            console.log(err)
-        })
+        .then(res => convertDatas(res.data))
+        .catch(() => console.log('Error in Fetching Data'))
 }
 
 
-function storeData(data, i) {
+const convertFromFile = (csvFilePath) => {
+
+    csv({ noheader: true, output: "csv" })
+        .fromFile(`./offlineCsv/${csvFilePath}`)
+        .then(jsonObj => {
+            makeJsonObject(jsonObj)
+        })
+}
+
+const convertDatas = (data) => {
+
+    csv({ noheader: true, output: "csv" })
+        .fromString(data)
+        .then((stockData) => {
+
+            makeJsonObject(stockData)
+
+        })
+        .catch(() => console.log('Conversion Error'))
+}
+
+const makeJsonObject = (stockData) => {
+
+    let headerRow = stockData.shift()
+    let jsonArrayData = []
+    let i = 1
+    stockData.map(x => {
+        let data = {
+            [headerRow[0]]: x[0],
+            [headerRow[1]]: x[1],
+            [headerRow[2]]: x[2],
+            [headerRow[3]]: x[3],
+            [headerRow[4]]: x[4],
+            [headerRow[5]]: x[5],
+            [headerRow[6]]: x[6],
+            [headerRow[7]]: x[7],
+            [headerRow[8]]: x[8],
+            [headerRow[9]]: x[9],
+            [headerRow[10]]: x[10],
+            [headerRow[11]]: x[11],
+            [headerRow[12]]: x[12],
+            [headerRow[13]]: x[13],
+            [headerRow[14]]: x[14],
+        }
+
+        storeData(data, i)
+        i++;
+        jsonArrayData.push(data)
+    })
+    storeToFile(jsonArrayData)
+}
+
+
+const storeData = (data, i) => {
 
     let symbol = data.SYMBOL
     let date = data.DATE1
@@ -64,11 +81,15 @@ function storeData(data, i) {
         .then(() => {
             console.log(`${i} : "${symbol}" dated "${date}" is Saved`)
         })
-        .catch(error => console.log(`${i} : ${symbol} dated ${date} Failed to Save`))
+        .catch(() => console.log(`${i} : ${symbol} dated ${date} Failed to Save`))
 }
 
-let day = 1, hour = 0, minute = 0, second = 0;
+const storeToFile = (jsonArrayData) => {
 
-const interval = (day * 24 * 60 * 60) + (hour * 60 * 60) + (minute * 60) + second
+    let fileDate = jsonArrayData[0].DATE1
+    fs.writeFileSync(`./offlineData/stock_data_${fileDate}.json`, JSON.stringify(jsonArrayData))
 
-getData()
+}
+
+// getData()
+convertFromFile('03042020.csv')
