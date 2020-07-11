@@ -10,7 +10,7 @@ const url = 'https://www1.nseindia.com/products/content/sec_bhavdata_full.csv'
 
 firebase.initializeApp(fbConfig)
 const db = firebase.firestore()
-const stockDbData = db.collection('stockData')
+const stockDbData = db.collection('stockHistoricalData')
 
 
 const getData = () => {
@@ -51,26 +51,27 @@ const makeJsonObject = (stockData) => {
         let data = {
             [headerRow[0]]: x[0],
             [headerRow[1]]: x[1],
-            [headerRow[2]]: x[2],
-            [headerRow[3]]: x[3],
-            [headerRow[4]]: x[4],
-            [headerRow[5]]: x[5],
-            [headerRow[6]]: x[6],
-            [headerRow[7]]: x[7],
-            [headerRow[8]]: x[8],
-            [headerRow[9]]: x[9],
-            [headerRow[10]]: x[10],
-            [headerRow[11]]: x[11],
-            [headerRow[12]]: x[12],
-            [headerRow[13]]: x[13],
-            [headerRow[14]]: x[14],
+            [headerRow[2]]: convertDateToTimeStamp(x[2]),
+            [headerRow[3]]: parseFloat(x[3]),
+            [headerRow[4]]: parseFloat(x[4]),
+            [headerRow[5]]: parseFloat(x[5]),
+            [headerRow[6]]: parseFloat(x[6]),
+            [headerRow[7]]: parseFloat(x[7]),
+            [headerRow[8]]: parseFloat(x[8]),
+            [headerRow[9]]: parseFloat(x[9]),
+            [headerRow[10]]: parseFloat(x[10]),
+            [headerRow[11]]: parseFloat(x[11]),
+            [headerRow[12]]: parseFloat(x[12]),
+            [headerRow[13]]: parseFloat(x[13]),
+            [headerRow[14]]: parseFloat(x[14]),
         }
 
         storeData(data, i)
         i++;
         jsonArrayData.push(data)
     })
-    storeToFile(jsonArrayData)
+    console.log(jsonArrayData)
+    // storeToFile(jsonArrayData)
 }
 
 
@@ -93,12 +94,17 @@ const storeToFile = (jsonArrayData) => {
 
 }
 
+const convertDateToTimeStamp = (date) => {
+    let newDate = new Date(date).getTime()
+    return newDate
+}
 
 let userAction = process.argv[2].toLowerCase()
 
 if (userAction == 'online') {
     getData()
-} else if (userAction == 'offline') {
+}
+else if (userAction == 'offline') {
     if (process.argv.length >= 3) {
         convertFromFile(process.argv[3])
     } else {
