@@ -7,7 +7,7 @@ const csvtojson = require('csvtojson')
 const fbConfig = require('./fbConfig').firebaseConfig
 
 let userAction = process.argv[2].toLowerCase()
-let isUpload = process.argv[4].toLowerCase() || false
+let isUpload = process.argv[4] || false
 
 const url = 'https://www1.nseindia.com/products/content/sec_bhavdata_full.csv'
 
@@ -54,7 +54,7 @@ const makeJsonObject = (stockData) => {
         let data = {
             [headerRow[0]]: x[0],
             [headerRow[1]]: x[1],
-            [headerRow[2]]: convertDateToTimeStamp(x[2]),
+            [headerRow[2]]: (isUpload) ? convertDateToTimeStamp(x[2]) : x[2],
             [headerRow[3]]: parseFloat(x[3]),
             [headerRow[4]]: parseFloat(x[4]),
             [headerRow[5]]: parseFloat(x[5]),
@@ -69,7 +69,7 @@ const makeJsonObject = (stockData) => {
             [headerRow[14]]: parseFloat(x[14]),
         }
 
-        if (isUpload == 'uplaod') {
+        if (isUpload) {
             storeData(data, i)
             i++;
         }
@@ -123,9 +123,6 @@ const timeStamptoDate = (time) => {
 
     return date
 }
-
-
-let userAction = process.argv[2].toLowerCase()
 
 if (userAction == 'online') {
     getData()
