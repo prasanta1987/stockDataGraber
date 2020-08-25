@@ -1,8 +1,6 @@
 // All Ignored Folders
 
 node_modules
-offlineCsv
-offlineData
 output
 
 //All Ignored Files
