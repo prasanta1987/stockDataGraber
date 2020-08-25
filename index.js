@@ -3,6 +3,7 @@ const csv = require('csvtojson')
 const fs = require('fs')
 const moment = require('moment')
 const { convertArrayToCSV } = require('convert-array-to-csv');
+const HTMLParser = require('node-html-parser');
 
 let userAction = process.argv
 userAction.shift()
@@ -10,9 +11,6 @@ userAction.shift()
 
 const type = userAction[0].toLocaleUpperCase()
 const symbol = userAction[1].toUpperCase()
-const series = userAction[2].toUpperCase()
-const startDate = userAction[3]
-const endDate = userAction[4]
 
 const fetchHistoricalData = async (symbol, series, startDate, endDate) => {
 
@@ -63,10 +61,26 @@ const getFinalData = (symbol, series, cumData) => {
 }
 
 
-if (type == 'HISTORICALDATA') {
-    get1stHistoricalData(symbol, series, startDate, endDate)
+const getSymbolData = async (symbol) => {
+    let symb = (symbol).toUpperCase()
+
+    symb = symb.replace('&', '%26')
+    const url = `https://www.nseindia.com/api/quote-equity?symbol=${symb}`
+
+    try {
+        let data = await axios.get(url)
+        return data.data.metadata.series
+
+    } catch (err) {
+        console.log(err)
+    }
+
 }
 
+if (type == 'HISTORICALDATA') {
+    getSymbolData(symbol)
+        .then(series => get1stHistoricalData(symbol, series))
+}
 
 const convertDateToTimeStamp = (date) => {
     let newDate = new Date(date).getTime()
