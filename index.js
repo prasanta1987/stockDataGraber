@@ -1,9 +1,7 @@
 const axios = require('axios')
-const csv = require('csvtojson')
 const fs = require('fs')
 const moment = require('moment')
 const { convertArrayToCSV } = require('convert-array-to-csv');
-const HTMLParser = require('node-html-parser');
 
 let userAction = process.argv
 userAction.shift()
