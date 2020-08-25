@@ -18,7 +18,8 @@
   "homepage": "https://github.com/prasanta1987/stockDataGraber#readme",
   "dependencies": {
     "axios": "^0.19.2",
+    "convert-array-to-csv": "^2.0.0",
     "csvtojson": "^2.0.10",
-    "firebase": "^7.15.5"
+    "moment": "^2.27.0"
   }
 }
