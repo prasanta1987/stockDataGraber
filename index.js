@@ -61,7 +61,7 @@ const getFinalData = (symbol, series, cumData) => {
 }
 
 
-const getSymbolData = async (symbol) => {
+const getSymbolSeries = async (symbol) => {
     let symb = (symbol).toUpperCase()
 
     symb = symb.replace('&', '%26')
@@ -78,7 +78,7 @@ const getSymbolData = async (symbol) => {
 }
 
 if (type == 'HISTORICALDATA') {
-    getSymbolData(symbol)
+    getSymbolSeries(symbol)
         .then(series => get1stHistoricalData(symbol, series))
 }
 
