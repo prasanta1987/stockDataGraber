@@ -1,11 +1,19 @@
 const axios = require('axios')
 const fs = require('fs')
+const path = require('path')
 const moment = require('moment')
 const { convertArrayToCSV } = require('convert-array-to-csv');
+const xlsx = require('xlsx')
 
 let userAction = process.argv
 userAction.shift()
 userAction.shift()
+
+fs.exists('output', exist => {
+    if (!exist) {
+        fs.mkdirSync('output')
+    }
+})
 
 const type = userAction[0].toLocaleUpperCase()
 
@@ -18,8 +26,29 @@ const fetchHistoricalData = async (symbol, series, startDate, endDate) => {
         const url = `https://www.nseindia.com/api/historical/cm/equity?symbol=${symb}&series=["${series}"]&from=${startDate}&to=${endDate}`
         let cumData = []
         let data = await axios.get(url)
+        let symbolArrayData = []
+        data.data.data.map(values => {
+            let symbolJsonData = {
+                symbol: values.CH_SYMBOL,
+                date: values.mTIMESTAMP,
+                series: values.CH_SERIES,
+                open: values.CH_OPENING_PRICE,
+                high: values.CH_TRADE_HIGH_PRICE,
+                low: values.CH_TRADE_LOW_PRICE,
+                close: values.CH_CLOSING_PRICE,
+                ltp: values.CH_LAST_TRADED_PRICE,
+                previousClose: values.CH_PREVIOUS_CLS_PRICE,
+                Week52High: values.CH_52WEEK_HIGH_PRICE,
+                Week52Low: values.CH_52WEEK_LOW_PRICE,
+                vwap: values.VWAP,
+                tradeQty: values.CH_TOT_TRADED_QTY,
+                tradeVal: values.CH_TOT_TRADED_VAL,
+                totalTrades: values.CH_TOTAL_TRADES,
+            }
+            symbolArrayData.push(symbolJsonData)
+        })
 
-        return data.data.data
+        return symbolArrayData
 
     } catch (err) {
         console.log(err.response.data.message)
@@ -27,32 +56,55 @@ const fetchHistoricalData = async (symbol, series, startDate, endDate) => {
     }
 }
 
-const get1stHistoricalData = (symbol, series) => {
+const get1stHistoricalData = async (symbol) => {
 
     const toDate = moment().format('DD-MM-yyyy')
     const fromDate = moment().subtract(100, 'days').format('DD-MM-yyyy')
 
-    fetchHistoricalData(symbol, series, fromDate, toDate)
-        .then(data => {
-            getFinalData(symbol, series, data)
+    let getSymbolInfo = await getSymbolData(symbol)
+    let seriesses = getSymbolInfo.info.activeSeries
+    if (seriesses.length > 0) {
+        seriesses.map(series => {
+            fetchHistoricalData(symbol, series, fromDate, toDate)
+                // .then(data => console.log(data))
+                .then(data => getFinalData(symbol, series, data))
         })
+    } else {
+        console.log('--------------------------------------------')
+        console.log(`|  No Active Series Found for "${symbol}"  |`)
+        console.log('--------------------------------------------')
+    }
 }
 
 const getFinalData = (symbol, series, cumData) => {
 
-    let lastDate = cumData[cumData.length - 1].mTIMESTAMP
+    let lastDate = cumData[cumData.length - 1].date
     const toDate = moment(new Date(lastDate).getTime()).subtract(1, 'days').format('DD-MM-yyyy')
     const fromDate = moment(new Date(lastDate).getTime()).subtract(100, 'days').format('DD-MM-yyyy')
 
-    console.log(`"${symbol}" Data Fetched upto ${cumData[cumData.length - 1].mTIMESTAMP}`)
+    console.log(`"${symbol}" Data Fetched upto ${cumData[cumData.length - 1].date}`)
     fetchHistoricalData(symbol, series, fromDate, toDate)
         .then(data => {
             cumData = cumData.concat(data)
             if (data.length > 2) {
                 getFinalData(symbol, series, cumData)
             } else {
-                const csvData = convertArrayToCSV(cumData);
-                fs.writeFileSync(`./output/${symbol}-historical-data.csv`, csvData)
+
+                fs.exists(path.join(__dirname, `./output/${symbol}.xlsx`), exist => {
+                    if (exist) {
+                        let newWb = xlsx.readFile(`${symbol}.xlsx`)
+                        let newWs = xlsx.utils.json_to_sheet(cumData)
+                        xlsx.utils.book_append_sheet(newWb, newWs, 'Historical data')
+
+                        xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`))
+                    } else {
+                        let newWb = xlsx.utils.book_new()
+                        let newWs = xlsx.utils.json_to_sheet(cumData)
+                        xlsx.utils.book_append_sheet(newWb, newWs, 'Historical data')
+
+                        xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`))
+                    }
+                })
             }
         })
 
@@ -78,16 +130,21 @@ const getSymbolData = async (symbol) => {
 const findSymbol = async (text) => {
     const name = text.toLocaleUpperCase()
     const data = await axios.get(`https://www.nseindia.com/api/search/autocomplete?q=${name}`)
-    console.log(data.data.symbols)
+    data.data.symbols.map(results => {
+        console.log(`${results.symbol} => ${results.activeSeries} => ${results.symbol_info}`)
+    })
 }
 
 if (type == 'HISTORICALDATA') {
-    const symbol = userAction[1].toUpperCase()
-    getSymbolData(symbol)
-        .then(series => get1stHistoricalData(symbol, series.metadata.series))
+    const symbols = userAction[1].toUpperCase()
+    symbols.split(',').map(symbol => get1stHistoricalData(symbol))
+
 } else if (type == 'FINDSYMBOL') {
     const text = userAction[1].toUpperCase()
     findSymbol(text)
+} else if (type == 'HELP') {
+    console.log('To Find Symbols   =>   e.g. node index.js findsymbol bank')
+    console.log('For Historical Data   =>   e.g. node index.js historicaldata sbin...,abb,...itc')
 }
 
 const convertDateToTimeStamp = (date) => {
