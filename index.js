@@ -90,21 +90,12 @@ const getFinalData = (symbol, series, cumData) => {
                 getFinalData(symbol, series, cumData)
             } else {
 
-                fs.exists(path.join(__dirname, `./output/${symbol}.xlsx`), exist => {
-                    if (exist) {
-                        let newWb = xlsx.readFile(`${symbol}.xlsx`)
-                        let newWs = xlsx.utils.json_to_sheet(cumData)
-                        xlsx.utils.book_append_sheet(newWb, newWs, 'Historical data')
+                let newWb = xlsx.utils.book_new()
+                let newWs = xlsx.utils.json_to_sheet(cumData)
+                xlsx.utils.book_append_sheet(newWb, newWs, 'Historical data')
 
-                        xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`))
-                    } else {
-                        let newWb = xlsx.utils.book_new()
-                        let newWs = xlsx.utils.json_to_sheet(cumData)
-                        xlsx.utils.book_append_sheet(newWb, newWs, 'Historical data')
+                xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`))
 
-                        xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`))
-                    }
-                })
             }
         })
 
@@ -145,6 +136,14 @@ if (type == 'HISTORICALDATA') {
 } else if (type == 'HELP') {
     console.log('To Find Symbols   =>   e.g. node index.js findsymbol bank')
     console.log('For Historical Data   =>   e.g. node index.js historicaldata sbin...,abb,...itc')
+} else if (type == 'FROMSOURCE') {
+    // const source = userAction[1].toUpperCase()
+    fs.readFile(path.join(__dirname, `./source/symbols.csv`), (err, data) => {
+        let symbols = data.toString().split('\r\n')
+        symbols.pop()
+        // symbols.map(symbol => console.log(symbol.trim()))
+        symbols.map(symbol => get1stHistoricalData(symbol.trim()))
+    })
 }
 
 const convertDateToTimeStamp = (date) => {
