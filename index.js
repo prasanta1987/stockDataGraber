@@ -63,11 +63,12 @@ const get1stHistoricalData = async (symbol) => {
 
     let getSymbolInfo = await getSymbolData(symbol)
     let seriesses = getSymbolInfo.info.activeSeries
+
     if (seriesses.length > 0) {
         seriesses.map(series => {
             fetchHistoricalData(symbol, series, fromDate, toDate)
-                // .then(data => console.log(data))
                 .then(data => getFinalData(symbol, series, data))
+
         })
     } else {
         console.log('--------------------------------------------')
@@ -76,28 +77,25 @@ const get1stHistoricalData = async (symbol) => {
     }
 }
 
-const getFinalData = (symbol, series, cumData) => {
+const getFinalData = async (symbol, series, cumData) => {
 
     let lastDate = cumData[cumData.length - 1].date
     const toDate = moment(new Date(lastDate).getTime()).subtract(1, 'days').format('DD-MM-yyyy')
     const fromDate = moment(new Date(lastDate).getTime()).subtract(100, 'days').format('DD-MM-yyyy')
 
     console.log(`"${symbol}" Data Fetched upto ${cumData[cumData.length - 1].date}`)
-    fetchHistoricalData(symbol, series, fromDate, toDate)
-        .then(data => {
-            cumData = cumData.concat(data)
-            if (data.length > 2) {
-                getFinalData(symbol, series, cumData)
-            } else {
+    let data = await fetchHistoricalData(symbol, series, fromDate, toDate)
 
-                let newWb = xlsx.utils.book_new()
-                let newWs = xlsx.utils.json_to_sheet(cumData)
-                xlsx.utils.book_append_sheet(newWb, newWs, 'Historical data')
+    cumData = cumData.concat(data)
 
-                xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`))
-
-            }
-        })
+    if (data.length > 2) {
+        setTimeout(() => getFinalData(symbol, series, cumData), 1000)
+    } else {
+        let newWb = xlsx.utils.book_new()
+        let newWs = xlsx.utils.json_to_sheet(cumData)
+        xlsx.utils.book_append_sheet(newWb, newWs, 'Historical data')
+        xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`))
+    }
 
 }
 
@@ -137,11 +135,9 @@ if (type == 'HISTORICALDATA') {
     console.log('To Find Symbols   =>   e.g. node index.js findsymbol bank')
     console.log('For Historical Data   =>   e.g. node index.js historicaldata sbin...,abb,...itc')
 } else if (type == 'FROMSOURCE') {
-    // const source = userAction[1].toUpperCase()
     fs.readFile(path.join(__dirname, `./source/symbols.csv`), (err, data) => {
         let symbols = data.toString().split('\r\n')
         symbols.pop()
-        // symbols.map(symbol => console.log(symbol.trim()))
         symbols.map(symbol => get1stHistoricalData(symbol.trim()))
     })
 }
