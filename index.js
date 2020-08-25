@@ -8,7 +8,7 @@ userAction.shift()
 userAction.shift()
 
 const type = userAction[0].toLocaleUpperCase()
-const symbol = userAction[1].toUpperCase()
+
 
 const fetchHistoricalData = async (symbol, series, startDate, endDate) => {
 
@@ -59,7 +59,7 @@ const getFinalData = (symbol, series, cumData) => {
 }
 
 
-const getSymbolSeries = async (symbol) => {
+const getSymbolData = async (symbol) => {
     let symb = (symbol).toUpperCase()
 
     symb = symb.replace('&', '%26')
@@ -67,7 +67,7 @@ const getSymbolSeries = async (symbol) => {
 
     try {
         let data = await axios.get(url)
-        return data.data.metadata.series
+        return data.data
 
     } catch (err) {
         console.log(err)
@@ -75,9 +75,19 @@ const getSymbolSeries = async (symbol) => {
 
 }
 
+const findSymbol = async (text) => {
+    const name = text.toLocaleUpperCase()
+    const data = await axios.get(`https://www.nseindia.com/api/search/autocomplete?q=${name}`)
+    console.log(data.data.symbols)
+}
+
 if (type == 'HISTORICALDATA') {
-    getSymbolSeries(symbol)
-        .then(series => get1stHistoricalData(symbol, series))
+    const symbol = userAction[1].toUpperCase()
+    getSymbolData(symbol)
+        .then(series => get1stHistoricalData(symbol, series.metadata.series))
+} else if (type == 'FINDSYMBOL') {
+    const text = userAction[1].toUpperCase()
+    findSymbol(text)
 }
 
 const convertDateToTimeStamp = (date) => {
