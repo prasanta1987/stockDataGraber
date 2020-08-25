@@ -46,7 +46,7 @@ const getFinalData = (symbol, series, cumData) => {
     const toDate = moment(new Date(lastDate).getTime()).subtract(1, 'days').format('DD-MM-yyyy')
     const fromDate = moment(new Date(lastDate).getTime()).subtract(100, 'days').format('DD-MM-yyyy')
 
-    console.log(`Fetched data upto ${cumData[cumData.length - 1].mTIMESTAMP}`)
+    console.log(`"${symbol}" Data Fetched upto ${cumData[cumData.length - 1].mTIMESTAMP}`)
     fetchHistoricalData(symbol, series, fromDate, toDate)
         .then(data => {
             cumData = cumData.concat(data)
