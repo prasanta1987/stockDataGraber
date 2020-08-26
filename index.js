@@ -218,7 +218,7 @@ const update1stData = async (symbol, fromDate, toDate) => {
 
                         console.log(`${symbol} Data Updated`)
                     } else {
-
+                        console.log('Data Not Available for Today or Not Yet Available in the Server')
                         if (symbolSourceList.length > 0) {
                             let symbolLength = symbolSourceList.length
                             if (symbolLength - 1 > symbolPosition) {
