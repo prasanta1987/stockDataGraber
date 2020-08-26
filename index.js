@@ -77,6 +77,15 @@ const get1stHistoricalData = async (symbol) => {
         console.log('--------------------------------------------')
         console.log(`|  No Active Series Found for "${symbol}"  |`)
         console.log('--------------------------------------------')
+
+        if (symbolSourceList.length > 0) {
+            let symbolLength = symbolSourceList.length
+            if (symbolLength - 1 > symbolPosition) {
+                checkLastAvailableData(symbolSourceList[symbolPosition])
+                symbolPosition++
+            }
+        }
+
     }
 }
 
@@ -107,6 +116,7 @@ const getFinalData = async (symbol, series, cumData) => {
                 symbolPosition++
             }
         }
+
     }
 
 }
@@ -238,13 +248,20 @@ if (type == 'HISTORICALDATA') {
     const text = userAction[1].toUpperCase()
     findSymbol(text)
 } else if (type == 'HELP') {
+    console.log('')
     console.log('To Find Symbols   =>   e.g. node index.js findsymbol bank')
     console.log('For Historical Data   =>   e.g. node index.js historicaldata sbin...,abb,...itc')
+    console.log('For Upload From a CVS file   =>   e.g. node index.js fromsource')
+    console.log('')
 } else if (type == 'FROMSOURCE') {
     fs.readFile(path.join(__dirname, `./source/symbols.csv`), (err, data) => {
-        let symbols = data.toString().split('\r\n')
-        symbols.map(symbol => symbolSourceList.push((symbol.trim())))
-        checkLastAvailableData(symbolSourceList[0])
+        if (!err) {
+            let symbols = data.toString().split('\r\n')
+            symbols.map(symbol => symbolSourceList.push((symbol.trim())))
+            checkLastAvailableData(symbolSourceList[0])
+        } else {
+            console.log('File "symbols.csv" Not Found')
+        }
     })
 } else if (type == 'UPDATE') {
     const symbols = userAction[1].toUpperCase()
