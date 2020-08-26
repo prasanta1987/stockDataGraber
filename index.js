@@ -165,6 +165,7 @@ const checkDataDuration = (symbol, fromDate) => {
         update1stData(symbol, fromAvlDate, toDate)
     } else {
         console.log(`${symbol} Already Updated`)
+
         if (symbolSourceList.length > 0) {
             let symbolLength = symbolSourceList.length
             if (symbolLength - 1 > symbolPosition) {
@@ -172,6 +173,7 @@ const checkDataDuration = (symbol, fromDate) => {
                 symbolPosition++
             }
         }
+
     }
 
 
@@ -192,6 +194,7 @@ const update1stData = async (symbol, fromDate, toDate) => {
                     if (cumData.length > 0) {
                         cumData = cumData.reverse()
 
+
                         let workBook = xlsx.readFile(path.join(__dirname, `./output/${symbol}.xlsx`), { cellDates: true })
                         let workSheet = workBook.Sheets['Historical data']
                         let existingData = xlsx.utils.sheet_to_json(workSheet)
@@ -204,6 +207,16 @@ const update1stData = async (symbol, fromDate, toDate) => {
                         xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`), { compression: true })
 
                         console.log(`${symbol} Data Updated`)
+                    } else {
+
+                        if (symbolSourceList.length > 0) {
+                            let symbolLength = symbolSourceList.length
+                            if (symbolLength - 1 > symbolPosition) {
+                                checkLastAvailableData(symbolSourceList[symbolPosition])
+                                symbolPosition++
+                            }
+                        }
+
                     }
                 })
 
