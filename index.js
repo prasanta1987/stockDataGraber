@@ -15,6 +15,9 @@ fs.exists('output', exist => {
     }
 })
 
+let symbolSourceList = []
+let symbolPosition = 1
+
 const type = userAction[0].toLocaleUpperCase()
 
 
@@ -89,12 +92,20 @@ const getFinalData = async (symbol, series, cumData) => {
     cumData = cumData.concat(data)
 
     if (data.length > 2) {
-        setTimeout(() => getFinalData(symbol, series, cumData), 1000)
+        getFinalData(symbol, series, cumData)
     } else {
         let newWb = xlsx.utils.book_new()
         let newWs = xlsx.utils.json_to_sheet(cumData)
         xlsx.utils.book_append_sheet(newWb, newWs, 'Historical data')
         xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`))
+
+        if (symbolSourceList.length > 0) {
+            let symbolLength = symbolSourceList.length
+            if (symbolLength - 1 > symbolPosition) {
+                get1stHistoricalData(symbolSourceList[symbolPosition])
+                symbolPosition++
+            }
+        }
     }
 
 }
@@ -137,8 +148,8 @@ if (type == 'HISTORICALDATA') {
 } else if (type == 'FROMSOURCE') {
     fs.readFile(path.join(__dirname, `./source/symbols.csv`), (err, data) => {
         let symbols = data.toString().split('\r\n')
-        symbols.pop()
-        symbols.map(symbol => get1stHistoricalData(symbol.trim()))
+        symbols.map(symbol => symbolSourceList.push((symbol.trim())))
+        get1stHistoricalData(symbolSourceList[0])
     })
 }
 
