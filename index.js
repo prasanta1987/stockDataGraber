@@ -97,7 +97,7 @@ const getFinalData = async (symbol, series, cumData) => {
         let newWb = xlsx.utils.book_new()
         let newWs = xlsx.utils.json_to_sheet(cumData)
         xlsx.utils.book_append_sheet(newWb, newWs, 'Historical data')
-        xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`))
+        xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`), { compression: true })
 
         if (symbolSourceList.length > 0) {
             let symbolLength = symbolSourceList.length
