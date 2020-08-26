@@ -54,8 +54,9 @@ const fetchHistoricalData = async (symbol, series, startDate, endDate) => {
         return symbolArrayData
 
     } catch (err) {
-        console.log(err.response.data.message)
-        // setTimeout(() => fetchHistoricalData(symbol, series, startDate, endDate), 5000)
+        // console.log(err.response.data.message)
+        console.log('Retrying Last Action')
+        setTimeout(() => fetchHistoricalData(symbol, series, startDate, endDate), 5000)
     }
 }
 
