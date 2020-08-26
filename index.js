@@ -54,30 +54,42 @@ const fetchHistoricalData = async (symbol, series, startDate, endDate) => {
         return symbolArrayData
 
     } catch (err) {
-        console.log(err.response.data.message)
-        // setTimeout(() => fetchHistoricalData(symbol, series, startDate, endDate), 5000)
+        // console.log(err.response.data.message)
+        console.log('Faile to Fetch The Main Function')
+        setTimeout(() => fetchHistoricalData(symbol, series, startDate, endDate), 5000)
     }
 }
 
 const get1stHistoricalData = async (symbol) => {
 
-    const toDate = moment().format('DD-MM-yyyy')
-    const fromDate = moment().subtract(100, 'days').format('DD-MM-yyyy')
+    try {
+        const toDate = moment().format('DD-MM-yyyy')
+        const fromDate = moment().subtract(100, 'days').format('DD-MM-yyyy')
 
-    let getSymbolInfo = await getSymbolData(symbol)
-    let seriesses = getSymbolInfo.info.activeSeries
+        let getSymbolInfo = await getSymbolData(symbol)
+        let seriesses = getSymbolInfo.info.activeSeries
 
-    if (seriesses.length > 0) {
-        seriesses.map(series => {
-            fetchHistoricalData(symbol, series, fromDate, toDate)
-                .then(data => getFinalData(symbol, series, data))
+        if (seriesses.length > 0) {
+            seriesses.map(series => {
+                fetchHistoricalData(symbol, series, fromDate, toDate)
+                    .then(data => getFinalData(symbol, series, data))
+                    .catch(err => {
+                        console.log('Retrying Last Action')
+                        setTimeout(() => fetchHistoricalData(symbol, series, fromDate, toDate), 5000)
+                    })
 
-        })
-    } else {
-        console.log('--------------------------------------------')
-        console.log(`|  No Active Series Found for "${symbol}"  |`)
-        console.log('--------------------------------------------')
+            })
+        } else {
+            console.log('--------------------------------------------')
+            console.log(`|  No Active Series Found for "${symbol}"  |`)
+            console.log('--------------------------------------------')
+        }
+
+    } catch (err) {
+        console.log('1st Data Fetch Failed')
+        setTimeout(() => get1stHistoricalData(symbol), 5000)
     }
+
 }
 
 const getFinalData = async (symbol, series, cumData) => {
@@ -107,7 +119,12 @@ const getFinalData = async (symbol, series, cumData) => {
                 symbolPosition++
             }
         }
+
+    } catch (err) {
+        console.log('Fetch Final Data Error')
+        setTimeout(() => getFinalData(symbol, series, cumData), 5000)
     }
+
 
 }
 
@@ -123,7 +140,8 @@ const getSymbolData = async (symbol) => {
         return data.data
 
     } catch (err) {
-        console.log(err)
+        console.log('Failed To Fetch Symbol Data')
+        setTimeout(() => getSymbolData(symbol), 5000)
     }
 
 }
