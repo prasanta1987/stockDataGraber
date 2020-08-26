@@ -103,7 +103,7 @@ const getFinalData = async (symbol, series, cumData) => {
         if (symbolSourceList.length > 0) {
             let symbolLength = symbolSourceList.length
             if (symbolLength - 1 > symbolPosition) {
-                get1stHistoricalData(symbolSourceList[symbolPosition])
+                checkLastAvailableData(symbolSourceList[symbolPosition])
                 symbolPosition++
             }
         }
@@ -140,6 +140,7 @@ const findSymbol = async (text) => {
 const checkLastAvailableData = (symbol) => {
     fs.exists(path.join(__dirname, `./output/${symbol}.xlsx`), isExist => {
         if (isExist) {
+            console.log(`Checking Updates For ${symbol}`)
             let workBook = xlsx.readFile(path.join(__dirname, `./output/${symbol}.xlsx`), { cellDates: true })
             let workSheet = workBook.Sheets['Historical data']
             let data = xlsx.utils.sheet_to_json(workSheet)
@@ -147,6 +148,9 @@ const checkLastAvailableData = (symbol) => {
             let lastAvailableDataDate = data[data.length - 1].date
 
             checkDataDuration(symbol, lastAvailableDataDate)
+        } else {
+            console.log(`Getting New Data For ${symbol}`)
+            get1stHistoricalData(symbol)
         }
     })
 }
@@ -157,9 +161,17 @@ const checkDataDuration = (symbol, fromDate) => {
     let toDate = moment().format('DD-MMM-yyyy')
 
     if (moment(new Date(fromAvlDate).getTime()).isSameOrBefore(new Date(toDate).getTime())) {
+        console.log(`Updates Available for ${symbol}`)
         update1stData(symbol, fromAvlDate, toDate)
     } else {
-        console.log('Already Updated')
+        console.log(`${symbol} Already Updated`)
+        if (symbolSourceList.length > 0) {
+            let symbolLength = symbolSourceList.length
+            if (symbolLength - 1 > symbolPosition) {
+                checkLastAvailableData(symbolSourceList[symbolPosition])
+                symbolPosition++
+            }
+        }
     }
 
 
@@ -191,7 +203,7 @@ const update1stData = async (symbol, fromDate, toDate) => {
                         xlsx.utils.book_append_sheet(newWb, newWs, 'Historical data')
                         xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`), { compression: true })
 
-                        console.log('Data Updated')
+                        console.log(`${symbol} Data Updated`)
                     }
                 })
 
@@ -207,7 +219,7 @@ const update1stData = async (symbol, fromDate, toDate) => {
 
 if (type == 'HISTORICALDATA') {
     const symbols = userAction[1].toUpperCase()
-    symbols.split(',').map(symbol => get1stHistoricalData(symbol))
+    symbols.split(',').map(symbol => checkLastAvailableData(symbol))
 
 } else if (type == 'FINDSYMBOL') {
     const text = userAction[1].toUpperCase()
@@ -219,7 +231,7 @@ if (type == 'HISTORICALDATA') {
     fs.readFile(path.join(__dirname, `./source/symbols.csv`), (err, data) => {
         let symbols = data.toString().split('\r\n')
         symbols.map(symbol => symbolSourceList.push((symbol.trim())))
-        get1stHistoricalData(symbolSourceList[0])
+        checkLastAvailableData(symbolSourceList[0])
     })
 } else if (type == 'UPDATE') {
     const symbols = userAction[1].toUpperCase()
