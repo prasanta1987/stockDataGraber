@@ -55,59 +55,77 @@ const fetchHistoricalData = async (symbol, series, startDate, endDate) => {
 
     } catch (err) {
         // console.log(err.response.data.message)
-        console.log('Retrying Last Action')
+        console.log('Faile to Fetch The Main Function')
         setTimeout(() => fetchHistoricalData(symbol, series, startDate, endDate), 5000)
     }
 }
 
 const get1stHistoricalData = async (symbol) => {
 
-    const toDate = moment().format('DD-MM-yyyy')
-    const fromDate = moment().subtract(100, 'days').format('DD-MM-yyyy')
+    try {
+        const toDate = moment().format('DD-MM-yyyy')
+        const fromDate = moment().subtract(100, 'days').format('DD-MM-yyyy')
 
-    let getSymbolInfo = await getSymbolData(symbol)
-    let seriesses = getSymbolInfo.info.activeSeries
+        let getSymbolInfo = await getSymbolData(symbol)
+        let seriesses = getSymbolInfo.info.activeSeries
 
-    if (seriesses.length > 0) {
-        seriesses.map(series => {
-            fetchHistoricalData(symbol, series, fromDate, toDate)
-                .then(data => getFinalData(symbol, series, data))
+        if (seriesses.length > 0) {
+            seriesses.map(series => {
+                fetchHistoricalData(symbol, series, fromDate, toDate)
+                    .then(data => getFinalData(symbol, series, data))
+                    .catch(err => {
+                        console.log('Retrying Last Action')
+                        setTimeout(() => fetchHistoricalData(symbol, series, fromDate, toDate), 5000)
+                    })
 
-        })
-    } else {
-        console.log('--------------------------------------------')
-        console.log(`|  No Active Series Found for "${symbol}"  |`)
-        console.log('--------------------------------------------')
+            })
+        } else {
+            console.log('--------------------------------------------')
+            console.log(`|  No Active Series Found for "${symbol}"  |`)
+            console.log('--------------------------------------------')
+        }
+
+    } catch (err) {
+        console.log('1st Data Fetch Failed')
+        setTimeout(() => get1stHistoricalData(symbol), 5000)
     }
+
 }
 
 const getFinalData = async (symbol, series, cumData) => {
 
-    let lastDate = cumData[cumData.length - 1].date
-    const toDate = moment(new Date(lastDate).getTime()).subtract(1, 'days').format('DD-MM-yyyy')
-    const fromDate = moment(new Date(lastDate).getTime()).subtract(100, 'days').format('DD-MM-yyyy')
+    try {
+        let lastDate = cumData[cumData.length - 1].date
+        const toDate = moment(new Date(lastDate).getTime()).subtract(1, 'days').format('DD-MM-yyyy')
+        const fromDate = moment(new Date(lastDate).getTime()).subtract(100, 'days').format('DD-MM-yyyy')
 
-    console.log(`"${symbol}" Data Fetched upto ${cumData[cumData.length - 1].date}`)
-    let data = await fetchHistoricalData(symbol, series, fromDate, toDate)
+        console.log(`"${symbol}" Data Fetched upto ${cumData[cumData.length - 1].date}`)
+        let data = await fetchHistoricalData(symbol, series, fromDate, toDate)
 
-    cumData = cumData.concat(data)
+        cumData = cumData.concat(data)
 
-    if (data.length > 2) {
-        getFinalData(symbol, series, cumData)
-    } else {
-        let newWb = xlsx.utils.book_new()
-        let newWs = xlsx.utils.json_to_sheet(cumData)
-        xlsx.utils.book_append_sheet(newWb, newWs, 'Historical data')
-        xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`), { compression: true })
+        if (data.length > 2) {
+            getFinalData(symbol, series, cumData)
+        } else {
+            let newWb = xlsx.utils.book_new()
+            let newWs = xlsx.utils.json_to_sheet(cumData)
+            xlsx.utils.book_append_sheet(newWb, newWs, 'Historical data')
+            xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`), { compression: true })
 
-        if (symbolSourceList.length > 0) {
-            let symbolLength = symbolSourceList.length
-            if (symbolLength - 1 > symbolPosition) {
-                get1stHistoricalData(symbolSourceList[symbolPosition])
-                symbolPosition++
+            if (symbolSourceList.length > 0) {
+                let symbolLength = symbolSourceList.length
+                if (symbolLength - 1 > symbolPosition) {
+                    get1stHistoricalData(symbolSourceList[symbolPosition])
+                    symbolPosition++
+                }
             }
         }
+
+    } catch (err) {
+        console.log('Fetch Final Data Error')
+        setTimeout(() => getFinalData(symbol, series, cumData), 5000)
     }
+
 
 }
 
@@ -123,7 +141,8 @@ const getSymbolData = async (symbol) => {
         return data.data
 
     } catch (err) {
-        console.log(err)
+        console.log('Failed To Fetch Symbol Data')
+        setTimeout(() => getSymbolData(symbol), 5000)
     }
 
 }
