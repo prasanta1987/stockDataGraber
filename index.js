@@ -94,6 +94,7 @@ const getFinalData = async (symbol, series, cumData) => {
     if (data.length > 2) {
         getFinalData(symbol, series, cumData)
     } else {
+        cumData = cumData.reverse()
         let newWb = xlsx.utils.book_new()
         let newWs = xlsx.utils.json_to_sheet(cumData)
         xlsx.utils.book_append_sheet(newWb, newWs, 'Historical data')
@@ -135,6 +136,75 @@ const findSymbol = async (text) => {
     })
 }
 
+
+const checkLastAvailableData = (symbol) => {
+    fs.exists(path.join(__dirname, `./output/${symbol}.xlsx`), isExist => {
+        if (isExist) {
+            let workBook = xlsx.readFile(path.join(__dirname, `./output/${symbol}.xlsx`), { cellDates: true })
+            let workSheet = workBook.Sheets['Historical data']
+            let data = xlsx.utils.sheet_to_json(workSheet)
+
+            let lastAvailableDataDate = data[data.length - 1].date
+
+            checkDataDuration(symbol, lastAvailableDataDate)
+        }
+    })
+}
+
+const checkDataDuration = (symbol, fromDate) => {
+
+    let fromAvlDate = moment(new Date(fromDate).getTime()).add(1, 'days').format('DD-MMM-yyyy')
+    let toDate = moment().format('DD-MMM-yyyy')
+
+    if (moment(new Date(fromAvlDate).getTime()).isSameOrBefore(new Date(toDate).getTime())) {
+        update1stData(symbol, fromAvlDate, toDate)
+    } else {
+        console.log('Already Updated')
+    }
+
+
+}
+
+const update1stData = async (symbol, fromDate, toDate) => {
+
+    toDate = moment(new Date(toDate).getTime()).format('DD-MM-yyyy')
+    fromDate = moment(new Date(fromDate).getTime()).format('DD-MM-yyyy')
+
+    let getSymbolInfo = await getSymbolData(symbol)
+    let seriesses = getSymbolInfo.info.activeSeries
+
+    if (seriesses.length > 0) {
+        seriesses.map(series => {
+            fetchHistoricalData(symbol, series, fromDate, toDate)
+                .then(cumData => {
+                    if (cumData.length > 0) {
+                        cumData = cumData.reverse()
+
+                        let workBook = xlsx.readFile(path.join(__dirname, `./output/${symbol}.xlsx`), { cellDates: true })
+                        let workSheet = workBook.Sheets['Historical data']
+                        let existingData = xlsx.utils.sheet_to_json(workSheet)
+
+                        cumData = existingData.concat(cumData)
+
+                        let newWb = xlsx.utils.book_new()
+                        let newWs = xlsx.utils.json_to_sheet(cumData)
+                        xlsx.utils.book_append_sheet(newWb, newWs, 'Historical data')
+                        xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`), { compression: true })
+
+                        console.log('Data Updated')
+                    }
+                })
+
+        })
+    } else {
+        console.log('--------------------------------------------')
+        console.log(`|  No Active Series Found for "${symbol}"  |`)
+        console.log('--------------------------------------------')
+    }
+
+
+}
+
 if (type == 'HISTORICALDATA') {
     const symbols = userAction[1].toUpperCase()
     symbols.split(',').map(symbol => get1stHistoricalData(symbol))
@@ -151,30 +221,7 @@ if (type == 'HISTORICALDATA') {
         symbols.map(symbol => symbolSourceList.push((symbol.trim())))
         get1stHistoricalData(symbolSourceList[0])
     })
-}
-
-const convertDateToTimeStamp = (date) => {
-    let newDate = new Date(date).getTime()
-    return newDate
-}
-
-
-const timeStamptoDate = (time) => {
-
-    let d = new Date(time)
-    let day = d.getDate()
-    let mon = d.getMonth()
-    let year = d.getFullYear()
-
-    var monthNames = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    ];
-
-    let date = `${day}-${monthNames[mon]}-${year}`
-    return date
-}
-
-const sanitizeInputs = (value) => {
-    value = parseFloat(value)
-    if (isNaN(value)) { return 0 } else { return value }
+} else if (type == 'UPDATE') {
+    const symbols = userAction[1].toUpperCase()
+    checkLastAvailableData(symbols)
 }
