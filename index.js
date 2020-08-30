@@ -4,6 +4,8 @@ const path = require('path')
 const moment = require('moment')
 const { convertArrayToCSV } = require('convert-array-to-csv');
 const xlsx = require('xlsx')
+const HTMLParser = require('node-html-parser');
+const { connected } = require('process');
 
 let userAction = process.argv
 userAction.shift()
@@ -240,6 +242,92 @@ const update1stData = async (symbol, fromDate, toDate) => {
 
 }
 
+// Screener Data Starts Here
+
+const getScreenerData = (symbol) => {
+
+    const url = `https://www.screener.in/company/${symbol}/consolidated/`
+
+    axios(url)
+        .then(data => {
+            let shareHoldingHTML = HTMLParser.parse(data.data).querySelector('#shareholding table').rawText
+            let cashFlowHTML = HTMLParser.parse(data.data).querySelector('#cash-flow table').rawText
+            let balanceSheetHTML = HTMLParser.parse(data.data).querySelector('#balance-sheet table').rawText
+            let profitLossHTML = HTMLParser.parse(data.data).querySelector('#profit-loss table').rawText
+            let quartersHTML = HTMLParser.parse(data.data).querySelector('#quarters table').rawText
+
+            convertHTMLData(shareHoldingHTML, 'ShareHolding Pattern', symbol)
+            convertHTMLData(cashFlowHTML, 'Cash Flow', symbol)
+            convertHTMLData(balanceSheetHTML, 'Balance Sheet', symbol)
+            convertHTMLData(profitLossHTML, 'PL Statement', symbol)
+            convertHTMLData(quartersHTML, 'Quaterly Statment', symbol)
+        })
+        .catch(err => console.log(err))
+}
+
+const convertHTMLData = (HTMLData, tabName, symbol) => {
+
+    let rawData = HTMLData.split('\n')
+    rawData = rawData.map(x => x.trim())
+    rawData = rawData.filter(x => x != '')
+    rawData = rawData.map(x => x.replace('&nbsp;+', ''))
+    let monthRange = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+    let headerData = []
+    let dataSets = []
+    let dataChunk = []
+    let headerLenght = 0
+    let currentposition = 0
+    let finalData = []
+
+    for (let i = 0; i < rawData.length; i++) {
+
+        if (monthRange.includes(rawData[i].slice(0, 3))) {
+            headerData.push(rawData[i])
+            headerLenght = i + 1
+        }
+
+    }
+
+    for (let j = headerLenght; j < rawData.length; j++) {
+        dataChunk.push(rawData[j])
+        currentposition++
+        if (currentposition > headerLenght) {
+            dataSets.push(dataChunk)
+            dataChunk = []
+            currentposition = 0
+        }
+    }
+
+    headerData.unshift('Items')
+    finalData.push(headerData)
+
+    dataSets.map(x => {
+        finalData.push(x)
+    })
+
+
+    console.log(finalData)
+    fs.exists(path.join(__dirname, `./output/${symbol}.xlsx`), exist => {
+        if (exist) {
+            let newWb = xlsx.readFile(path.join(__dirname, `./output/${symbol}.xlsx`))
+            let newWs = xlsx.utils.aoa_to_sheet(finalData)
+            xlsx.utils.book_append_sheet(newWb, newWs, tabName)
+            xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`), { compression: true })
+        } else {
+            let newWb = xlsx.utils.book_new()
+            let newWs = xlsx.utils.aoa_to_sheet(finalData)
+            xlsx.utils.book_append_sheet(newWb, newWs, tabName)
+            xlsx.writeFile(newWb, path.join(__dirname, `./output/${symbol}.xlsx`), { compression: true })
+
+        }
+    })
+
+}
+
+
+// Screener Data Ends ere
+
 if (type == 'HISTORICALDATA') {
     const symbols = userAction[1].toUpperCase()
     symbols.split(',').map(symbol => checkLastAvailableData(symbol))
@@ -266,4 +354,7 @@ if (type == 'HISTORICALDATA') {
 } else if (type == 'UPDATE') {
     const symbols = userAction[1].toUpperCase()
     checkLastAvailableData(symbols)
+} else if (type == 'SCREENER') {
+    const symbol = userAction[1].toUpperCase()
+    getScreenerData(symbol)
 }
