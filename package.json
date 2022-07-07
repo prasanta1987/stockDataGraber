@@ -19,7 +19,7 @@
   "dependencies": {
     "axios": "^0.19.2",
     "convert-array-to-csv": "^2.0.0",
-    "moment": "^2.27.0",
+    "moment": "^2.29.4",
     "node-html-parser": "^1.2.20",
     "xlsx": "^0.16.6"
   }
